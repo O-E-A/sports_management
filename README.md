@@ -1,3 +1,5 @@
+React, node.js, express.js teknolojileriyle MongoDB Atlas içerisinde tutulan verilerle işlemler yaptığım Amerikan Futbolu özelinde bir uygulama geliştiriryorum.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
