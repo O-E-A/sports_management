@@ -1,3 +1,5 @@
+// sports-frontend-template\src\views\players\PlayerList.js
+
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import {
@@ -13,14 +15,18 @@ import {
 const PlayerList = () => {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null) // Hata durumu ekleyelim
 
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
+        // Backend'deki yeni '/api/profiles' rotasına istek atıyoruz
         const response = await axios.get('http://localhost:5000/api/profiles')
         setPlayers(response.data)
+        console.log('PlayerList - Players fetched successfully:', response.data)
       } catch (error) {
-        console.error('Oyuncular çekilemedi:', error)
+        console.error('PlayerList - Oyuncular çekilemedi:', error)
+        setError('Oyuncular listesi alınamadı. Lütfen backend sunucunuzun çalıştığından emin olun.')
       } finally {
         setLoading(false)
       }
@@ -29,7 +35,13 @@ const PlayerList = () => {
     fetchPlayers()
   }, [])
 
-  if (loading) return <CSpinner color="primary" />
+  if (loading) return <CSpinner color="primary" className="my-3" /> // Yüklenirken spinner göster
+
+  if (error) return <p className="text-danger">{error}</p> // Hata durumunda mesaj göster
+
+  if (players.length === 0) {
+    return <p>Henüz hiç oyuncu bulunmamaktadır.</p> // Oyuncu yoksa bilgi mesajı
+  }
 
   return (
     <div>
@@ -48,6 +60,8 @@ const PlayerList = () => {
         <CTableBody>
           {players.map((player) => (
             <CTableRow key={player._id}>
+              {' '}
+              {/* _id'nin olduğundan emin olun */}
               <CTableDataCell>{player.firstName}</CTableDataCell>
               <CTableDataCell>{player.lastName}</CTableDataCell>
               <CTableDataCell>{player.age}</CTableDataCell>

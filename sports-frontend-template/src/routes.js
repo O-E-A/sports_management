@@ -1,3 +1,4 @@
+// sports-frontend-template\src\routes.js
 import React from 'react'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))

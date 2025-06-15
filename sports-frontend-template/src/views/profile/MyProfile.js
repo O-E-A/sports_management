@@ -1,3 +1,5 @@
+// sports-frontend-template\src\views\profile\MyProfile.js
+
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import {
@@ -18,23 +20,31 @@ const MyProfile = () => {
     const fetchProfile = async () => {
       try {
         const user = JSON.parse(localStorage.getItem('user'))
-        if (!user) {
-          setError('Giriş yapmamış kullanıcı')
+        console.log('MyProfile - User from localStorage:', user) // localStorage'daki kullanıcıyı logla
+
+        if (!user || !user.id) {
+          // user ve user.id'nin varlığını kontrol et
+          setError('Giriş yapmamış kullanıcı veya kullanıcı ID bulunamadı.')
           return
         }
 
+        // Backend'deki '/api/profiles/:userId' rotasına istek atıyoruz
         const res = await axios.get(`http://localhost:5000/api/profiles/${user.id}`)
         setProfile(res.data)
+        console.log('MyProfile - Profile fetched successfully:', res.data)
       } catch (err) {
-        setError('Profil alınamadı.')
+        console.error('MyProfile - Error fetching profile:', err)
+        setError(
+          'Profil alınamadı. Lütfen backend sunucunuzun çalıştığından ve veritabanı bağlantısının doğru olduğundan emin olun. Konsoldaki detaylı hatayı kontrol edin.',
+        )
       }
     }
 
     fetchProfile()
-  }, [])
+  }, []) // Bağımlılık dizisi boş olduğu için sadece bir kere çalışır
 
   if (error) {
-    return <p>{error}</p>
+    return <p className="text-danger">{error}</p> // Hata mesajını daha belirgin yap
   }
 
   if (!profile) {
@@ -64,7 +74,7 @@ const MyProfile = () => {
                 <strong>Kilo:</strong> {profile.weight} kg
               </CListGroupItem>
               <CListGroupItem>
-                <strong>Mevkii:</strong> {profile.position}
+                <strong>Mevki:</strong> {profile.position}
               </CListGroupItem>
             </CListGroup>
           </CCardBody>
