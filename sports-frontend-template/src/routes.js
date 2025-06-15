@@ -3,7 +3,12 @@ import React from 'react'
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
+
 const PlayerList = React.lazy(() => import('./views/players/PlayerList'))
+const InventoryList = React.lazy(() => import('./views/inventory/InventoryList'))
+const CalendarPage = React.lazy(() => import('./views/agenda/CalendarPage'))
+const MatchSummaryPage = React.lazy(() => import('./views/matchSummary/MatchSummaryPage'))
+const MyProfile = React.lazy(() => import('./views/profile/MyProfile'))
 
 // Base
 const Accordion = React.lazy(() => import('./views/base/accordion/Accordion'))
@@ -53,7 +58,11 @@ const Toasts = React.lazy(() => import('./views/notifications/toasts/Toasts'))
 const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
+  { path: '/inventory', name: 'Envanter', element: InventoryList },
   { path: '/players', name: 'Oyuncular', element: PlayerList },
+  { path: '/agenda', name: 'Ajanda', element: CalendarPage },
+  { path: '/match-summary', name: 'Maç Özeti', element: MatchSummaryPage },
+  { path: '/my-profile', name: 'Profilim', element: MyProfile },
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
