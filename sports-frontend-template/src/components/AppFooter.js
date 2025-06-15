@@ -8,7 +8,7 @@ const AppFooter = () => {
         <a href="#" target="_blank" rel="noopener noreferrer">
           OEA
         </a>
-        <span className="ms-1">&copy; 2025 CREATED BY OEA</span>
+        <span className="ms-1">&copy; 2025 created by OEA</span>
       </div>
       <div className="ms-auto">
         <span className="me-1">Powered by</span>
