@@ -1,4 +1,6 @@
-import React from 'react'
+//-- sports-frontend-template\src\views\dashboard\Dashboard.js - //
+// import React from 'react'
+import React, { useEffect, useState } from 'react'
 import classNames from 'classnames'
 
 import {
@@ -53,8 +55,24 @@ import avatar6 from 'src/assets/images/avatars/6.jpg'
 import WidgetsBrand from '../widgets/WidgetsBrand'
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
+import axios from 'axios'
 
 const Dashboard = () => {
+  const [announcements, setAnnouncements] = useState([])
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/announcements')
+        setAnnouncements(response.data)
+      } catch (err) {
+        console.error('Duyurular alınamadı:', err)
+      }
+    }
+
+    fetchAnnouncements()
+  }, [])
+
   const progressExample = [
     { title: 'Visits', value: '29.703 Users', percent: 40, color: 'success' },
     { title: 'Unique', value: '24.093 Users', percent: 20, color: 'info' },
@@ -178,6 +196,25 @@ const Dashboard = () => {
 
   return (
     <>
+      {/* DUYURULAR KARTI */}
+      <CCard className="mb-4">
+        <CCardHeader>Duyurular</CCardHeader>
+        <CCardBody>
+          {announcements.length === 0 ? (
+            <p>Henüz bir duyuru bulunmamaktadır.</p>
+          ) : (
+            announcements.map((item, index) => (
+              <div key={index} className="mb-3 border-bottom pb-2">
+                <h5 className="fw-semibold">{item.title}</h5>
+                <p className="mb-1">{item.content}</p>
+                <small className="text-body-secondary">
+                  {new Date(item.createdAt).toLocaleString()}
+                </small>
+              </div>
+            ))
+          )}
+        </CCardBody>
+      </CCard>
       <WidgetsDropdown className="mb-4" />
       <CCard className="mb-4">
         <CCardBody>

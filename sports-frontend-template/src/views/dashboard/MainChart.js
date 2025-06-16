@@ -1,3 +1,4 @@
+//-- sports-frontend-template\src\views\dashboard\MainChart.js --
 import React, { useEffect, useRef } from 'react'
 
 import { CChartLine } from '@coreui/react-chartjs'
