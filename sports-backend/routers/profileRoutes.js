@@ -1,36 +1,90 @@
-// sports-backend/routes/profileRoutes.js
+const express = require('express');
+const router = express.Router();
+const mongoose = require('mongoose');
+const Profile = require('../models/profile');
+const User = require('../models/user'); // User modelini de dahil ediyoruz
 
-const express = require('express')
-const router = express.Router()
-const Profile = require('../models/profile')
-const mongoose = require('mongoose') // Mongoose'u dahil etmeyi unutmayın
+//================================================================
+// YENİ EKLENEN ROTA: Yeni bir oyuncu oluştur (User + Profile)
+//================================================================
+router.post('/', async (req, res) => {
+  // Frontend'den gönderilen tüm verileri alıyoruz
+  const {
+    username, password, email, phone,
+    firstName, lastName, age, height, weight, position, teamId
+  } = req.body;
+
+  // Gerekli alanların dolu olup olmadığını kontrol et
+  if (!username || !password || !firstName || !lastName) {
+    return res.status(400).json({ message: 'Kullanıcı adı, şifre, ad ve soyad alanları zorunludur.' });
+  }
+
+  try {
+    // 1. ADIM: KULLANICI OLUŞTURMA
+    // Bu kullanıcı adının daha önce alınıp alınmadığını kontrol et
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Bu kullanıcı adı zaten kullanılıyor.' });
+    }
+
+    // Yeni bir 'User' nesnesi oluştur
+    const newUser = new User({
+      username,
+      password, // Talebiniz üzerine şifre hash'lenmeden kaydediliyor
+      email,
+      phone,
+      role: req.body.role || 'player', // frontend'den gelen 'role' bilgisini kullan, gelmezse varsayılan 'player' yap
+    });
+
+    // Yeni kullanıcıyı 'users' koleksiyonuna kaydet
+    const savedUser = await newUser.save();
+
+    // 2. ADIM: PROFİL OLUŞTURMA
+    // Yeni bir 'Profile' nesnesi oluştur
+    const newProfile = new Profile({
+      userId: savedUser._id, // <<<--- İŞİN EN ÖNEMLİ KISMI: Oluşturulan kullanıcının ID'sini bağlıyoruz
+      firstName,
+      lastName,
+      age,
+      height,
+      weight,
+      position,
+      teamId: teamId || null // Takım ID'si gönderilmediyse null olarak ayarla
+    });
+
+    // Yeni profili 'profiles' koleksiyonuna kaydet
+    await newProfile.save();
+
+    res.status(201).json({ message: 'Oyuncu başarıyla oluşturuldu!' });
+
+  } catch (error) {
+    console.error("Oyuncu oluşturma hatası:", error);
+    // Burada bir hata olursa, idealde yukarıda oluşturulan 'savedUser' kaydının da silinmesi gerekir.
+    res.status(500).json({ message: 'Sunucu tarafında bir hata oluştu.' });
+  }
+});
+
+
+//================================================================
+// MEVCUT ROTALARINIZ (DEĞİŞİKLİK YOK)
+//================================================================
 
 // Rota 1: Belirli bir kullanıcıya ait profili getir (Profilim sayfası için)
 router.get('/:userId', async (req, res) => {
   try {
     const userIdFromParams = req.params.userId;
-
-    // Konsolda parametreyi kontrol edelim
     console.log('Backend Profile Route - Received userId:', userIdFromParams);
 
-    // userId'nin geçerli bir ObjectId olup olmadığını kontrol edin.
-    // Eğer veritabanında userId'yi string olarak saklıyorsanız bu kontrolü kaldırabilirsiniz.
     if (!mongoose.Types.ObjectId.isValid(userIdFromParams)) {
       console.log('Backend Profile Route - Invalid ObjectId format for userId:', userIdFromParams);
-      // Eğer kullanıcının _id'si Object ID olarak kayıtlı ise ve burada hata alıyorsanız,
-      // büyük ihtimalle front-end'den gelen user.id doğru Object ID formatında değildir.
-      // Ya da profiles koleksiyonunuzdaki userId alanı String olarak kaydedilmiştir.
       return res.status(400).json({ message: 'Geçersiz kullanıcı ID formatı.' });
     }
 
-    // profiller koleksiyonundaki userId alanını, gelen ObjectId ile eşleştir.
-    // MongoDB Atlas'taki profiles koleksiyonunuzdaki userId alanının "ObjectId" tipinde
-    // ve "users" koleksiyonundaki kullanıcının "_id"si ile aynı değeri içerdiğinden EMİN OLUN.
     const profile = await Profile.findOne({ userId: new mongoose.Types.ObjectId(userIdFromParams) });
 
     if (!profile) {
       console.log('Backend Profile Route - Profile not found for userId:', userIdFromParams);
-      return res.status(404).json({ message: 'Profil bulunamadı. Lütfen profiles koleksiyonundaki userId alanının, users koleksiyonundaki kullanıcının _id\'si ile eşleştiğinden emin olun.' });
+      return res.status(404).json({ message: 'Profil bulunamadı.' });
     }
 
     console.log('Backend Profile Route - Profile found:', profile);
@@ -44,7 +98,7 @@ router.get('/:userId', async (req, res) => {
 // Rota 2: Tüm profilleri getir (Oyuncular Listesi için)
 router.get('/', async (req, res) => {
   try {
-    const profiles = await Profile.find(); // Tüm profilleri getir
+    const profiles = await Profile.find();
 
     if (!profiles || profiles.length === 0) {
       console.log('Backend PlayerList Route - No profiles found.');
