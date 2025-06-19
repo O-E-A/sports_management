@@ -3,11 +3,15 @@ const mongoose = require('mongoose')
 const announcementSchema = new mongoose.Schema({
   title: String,
   content: String,
-  createdBy: mongoose.Schema.Types.ObjectId,
-  createdAt:{
+  author: { // <-- Burayı 'author' olarak değiştirdik
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User', // User modeline referans veriyoruz
+    required: true // Yazarın zorunlu olması gerektiğini belirttik
+  },
+  createdAt: {
     type: Date,
     default: Date.now
-}
-})
+  }
+});
 
 module.exports = mongoose.model('Announcement', announcementSchema, 'announcement')

@@ -1,14 +1,22 @@
-const express = require('express')
-const router = express.Router()
-const Announcement = require('../models/announcement')
+// sports-backend/routes/announcementRoutes.js
+const express = require('express');
+const router = express.Router();
+const announcementController = require('../controllers/announcementController');
+// İsterseniz burada kimlik doğrulama middleware'ı ekleyebilirsiniz
+// const authMiddleware = require('../middleware/auth'); // Örneğin, bir auth middleware'ınız varsa
 
-router.get('/', async (req, res) => {
-  try {
-    const announcements = await Announcement.find()
-    res.json(announcements)
-  } catch (err) {
-    res.status(500).json({ message: err.message })
-  }
-})
+// Yeni duyuru oluşturma rotası
+// Bu rota, sadece belirli yetkilere sahip kullanıcılar tarafından çağrılmalı (koç/admin gibi)
+// Eğer authMiddleware'iniz varsa şöyle kullanabilirsiniz:
+// router.post('/', authMiddleware.verifyToken, authMiddleware.authorizeRoles(['admin', 'coach']), announcementController.createAnnouncement);
+router.post('/', announcementController.createAnnouncement);
 
-module.exports = router
+// Tüm duyuruları getirme rotası
+router.get('/', announcementController.getAnnouncements);
+
+// Diğer duyuru rotaları (isteğe bağlı olarak eklenebilir)
+// router.get('/:id', announcementController.getAnnouncementById);
+// router.put('/:id', announcementController.updateAnnouncement);
+// router.delete('/:id', announcementController.deleteAnnouncement);
+
+module.exports = router;

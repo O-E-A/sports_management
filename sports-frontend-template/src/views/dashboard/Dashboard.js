@@ -1,8 +1,5 @@
-//-- sports-frontend-template\src\views\dashboard\Dashboard.js - //
-// import React from 'react'
 import React, { useEffect, useState } from 'react'
 import classNames from 'classnames'
-
 import {
   CAvatar,
   CButton,
@@ -20,6 +17,17 @@ import {
   CTableHead,
   CTableHeaderCell,
   CTableRow,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
+  CForm,
+  CFormInput,
+  CFormLabel,
+  CFormTextarea,
+  CSpinner,
+  CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -43,6 +51,8 @@ import {
   cilPeople,
   cilUser,
   cilUserFemale,
+  cilPlus,
+  cilBullhorn,
 } from '@coreui/icons'
 
 import avatar1 from 'src/assets/images/avatars/1.jpg'
@@ -56,22 +66,97 @@ import WidgetsBrand from '../widgets/WidgetsBrand'
 import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
 import axios from 'axios'
+import moment from 'moment'
 
 const Dashboard = () => {
   const [announcements, setAnnouncements] = useState([])
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true)
+  const [errorAnnouncements, setErrorAnnouncements] = useState(null)
+
+  const [addAnnouncementModalVisible, setAddAnnouncementModalVisible] = useState(false)
+  const [newAnnouncementTitle, setNewAnnouncementTitle] = useState('')
+  const [newAnnouncementContent, setNewAnnouncementContent] = useState('')
+  const [addingAnnouncement, setAddingAnnouncement] = useState(false)
+  const [addAnnouncementError, setAddAnnouncementError] = useState(null)
+  const [addAnnouncementSuccess, setAddAnnouncementSuccess] = useState(null)
+
+  const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (user) {
+      setCurrentUser(user)
+    }
+
     const fetchAnnouncements = async () => {
+      setLoadingAnnouncements(true)
+      setErrorAnnouncements(null)
       try {
         const response = await axios.get('http://localhost:5000/api/announcements')
         setAnnouncements(response.data)
       } catch (err) {
         console.error('Duyurular alınamadı:', err)
+        setErrorAnnouncements(
+          err.response?.data?.message || 'Duyurular yüklenirken bir hata oluştu.',
+        )
+      } finally {
+        setLoadingAnnouncements(false)
       }
     }
 
     fetchAnnouncements()
   }, [])
+
+  const canAddAnnouncement =
+    currentUser && (currentUser.role === 'admin' || currentUser.role === 'coach')
+
+  const handleAnnouncementInputChange = (e) => {
+    const { id, value } = e.target
+    if (id === 'announcementTitle') {
+      setNewAnnouncementTitle(value)
+    } else if (id === 'announcementContent') {
+      setNewAnnouncementContent(value)
+    }
+  }
+
+  const handleAddAnnouncementSubmit = async (e) => {
+    e.preventDefault()
+    setAddingAnnouncement(true)
+    setAddAnnouncementError(null)
+    setAddAnnouncementSuccess(null)
+
+    if (!currentUser || !currentUser.id) {
+      setAddAnnouncementError("Kullanıcı ID'si bulunamadı. Lütfen tekrar giriş yapın.")
+      setAddingAnnouncement(false)
+      return
+    }
+    if (!newAnnouncementTitle || !newAnnouncementContent) {
+      setAddAnnouncementError('Başlık ve içerik boş bırakılamaz.')
+      setAddingAnnouncement(false)
+      return
+    }
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/announcements', {
+        title: newAnnouncementTitle,
+        content: newAnnouncementContent,
+        author: currentUser.id,
+      })
+
+      if (response.status === 201) {
+        setAddAnnouncementSuccess("Duyuru başarıyla eklendi ve Telegram'a gönderildi!")
+        setNewAnnouncementTitle('')
+        setNewAnnouncementContent('')
+        setAddAnnouncementModalVisible(false)
+        setAnnouncements((prevAnnouncements) => [response.data.announcement, ...prevAnnouncements])
+      }
+    } catch (err) {
+      setAddAnnouncementError(err.response?.data?.message || 'Duyuru eklenirken bir hata oluştu.')
+      console.error('Duyuru ekleme hatası:', err.response?.data || err)
+    } finally {
+      setAddingAnnouncement(false)
+    }
+  }
 
   const progressExample = [
     { title: 'Visits', value: '29.703 Users', percent: 40, color: 'success' },
@@ -196,26 +281,111 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* DUYURULAR KARTI */}
+      <WidgetsDropdown className="mb-4" />
+
+      {/* Duyurular Kartı */}
       <CCard className="mb-4">
-        <CCardHeader>Duyurular</CCardHeader>
+        <CCardHeader className="d-flex justify-content-between align-items-center">
+          Duyurular
+          {/* Sadece admin veya koç ise Duyuru Ekle butonu görünür */}
+          {canAddAnnouncement && (
+            <CButton color="primary" size="sm" onClick={() => setAddAnnouncementModalVisible(true)}>
+              <CIcon icon={cilPlus} className="me-1" /> Duyuru Ekle
+            </CButton>
+          )}
+        </CCardHeader>
         <CCardBody>
-          {announcements.length === 0 ? (
-            <p>Henüz bir duyuru bulunmamaktadır.</p>
+          {loadingAnnouncements ? (
+            <div
+              className="d-flex justify-content-center align-items-center"
+              style={{ minHeight: '100px' }}
+            >
+              <CSpinner color="primary" variant="grow" />
+              <span className="ms-2">Duyurular yükleniyor...</span>
+            </div>
+          ) : errorAnnouncements ? (
+            <CAlert color="danger">{errorAnnouncements}</CAlert>
+          ) : announcements.length === 0 ? (
+            <CAlert color="info">Henüz duyuru bulunmamaktadır.</CAlert>
           ) : (
-            announcements.map((item, index) => (
-              <div key={index} className="mb-3 border-bottom pb-2">
-                <h5 className="fw-semibold">{item.title}</h5>
-                <p className="mb-1">{item.content}</p>
-                <small className="text-body-secondary">
-                  {new Date(item.createdAt).toLocaleString()}
-                </small>
-              </div>
-            ))
+            <CTable hover responsive align="middle" className="mb-0 border">
+              <CTableHead color="light">
+                <CTableRow>
+                  <CTableHeaderCell>Başlık</CTableHeaderCell>
+                  <CTableHeaderCell>İçerik</CTableHeaderCell>
+                  <CTableHeaderCell>Yayınlayan</CTableHeaderCell>
+                  <CTableHeaderCell>Tarih</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                {announcements.map((item) => (
+                  <CTableRow key={item._id}>
+                    <CTableDataCell>
+                      <div className="fw-semibold">{item.title}</div>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <div>{item.content}</div>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <div>{item.author?.username || 'Bilinmiyor'}</div>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <div>{moment(item.createdAt).format('DD.MM.YYYY HH:mm')}</div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
           )}
         </CCardBody>
       </CCard>
-      <WidgetsDropdown className="mb-4" />
+
+      {/* Yeni Duyuru Ekleme Modalı */}
+      <CModal
+        visible={addAnnouncementModalVisible}
+        onClose={() => setAddAnnouncementModalVisible(false)}
+      >
+        <CModalHeader>
+          <CModalTitle>Yeni Duyuru Ekle</CModalTitle>
+        </CModalHeader>
+        <CForm onSubmit={handleAddAnnouncementSubmit}>
+          <CModalBody>
+            {addAnnouncementError && <CAlert color="danger">{addAnnouncementError}</CAlert>}
+            {addAnnouncementSuccess && <CAlert color="success">{addAnnouncementSuccess}</CAlert>}
+
+            <div className="mb-3">
+              <CFormLabel htmlFor="announcementTitle">Duyuru Başlığı</CFormLabel>
+              <CFormInput
+                type="text"
+                id="announcementTitle"
+                value={newAnnouncementTitle}
+                onChange={handleAnnouncementInputChange}
+                required
+              />
+            </div>
+            <div className="mb-3">
+              <CFormLabel htmlFor="announcementContent">Duyuru İçeriği</CFormLabel>
+              <CFormTextarea
+                id="announcementContent"
+                rows={5}
+                value={newAnnouncementContent}
+                onChange={handleAnnouncementInputChange}
+                required
+              ></CFormTextarea>
+            </div>
+          </CModalBody>
+          <CModalFooter>
+            <CButton color="secondary" onClick={() => setAddAnnouncementModalVisible(false)}>
+              İptal
+            </CButton>
+            <CButton color="primary" type="submit" disabled={addingAnnouncement}>
+              {addingAnnouncement ? 'Ekleniyor...' : 'Duyuruyu Ekle'}
+            </CButton>
+          </CModalFooter>
+        </CForm>
+      </CModal>
+
+      {/* Dashboard'daki diğer kartlar ve içerikler buraya devam ediyor */}
       <CCard className="mb-4">
         <CCardBody>
           <CRow>
@@ -379,24 +549,29 @@ const Dashboard = () => {
                 </CTableHead>
                 <CTableBody>
                   {tableExample.map((item, index) => (
-                    <CTableRow v-for="item in tableItems" key={index}>
+                    <CTableRow key={index}>
                       <CTableDataCell className="text-center">
                         <CAvatar size="md" src={item.avatar.src} status={item.avatar.status} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div>{item.user.name}</div>
-                        <div className="small text-body-secondary text-nowrap">
-                          <span>{item.user.new ? 'New' : 'Recurring'}</span> | Registered:{' '}
-                          {item.user.registered}
+                        {/* Kapanış etiketi eksik olan kısım burasıydı */}
+                        <div>
+                          {item.user.name}
+                          {item.user.new && <span className="badge bg-success ms-2">New</span>}
+                        </div>
+                        <div className="small text-body-secondary">
+                          <span>{item.user.registered}</span>
                         </div>
                       </CTableDataCell>
                       <CTableDataCell className="text-center">
                         <CIcon size="xl" icon={item.country.flag} title={item.country.name} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div className="d-flex justify-content-between text-nowrap">
-                          <div className="fw-semibold">{item.usage.value}%</div>
-                          <div className="ms-3">
+                        <div className="clearfix">
+                          <div className="float-start">
+                            <strong>{item.usage.value}%</strong>
+                          </div>
+                          <div className="float-end">
                             <small className="text-body-secondary">{item.usage.period}</small>
                           </div>
                         </div>
@@ -406,8 +581,8 @@ const Dashboard = () => {
                         <CIcon size="xl" icon={item.payment.icon} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        <div className="small text-body-secondary text-nowrap">Last login</div>
-                        <div className="fw-semibold text-nowrap">{item.activity}</div>
+                        <div className="small text-body-secondary">Last login</div>
+                        <div className="fw-semibold">{item.activity}</div>
                       </CTableDataCell>
                     </CTableRow>
                   ))}
