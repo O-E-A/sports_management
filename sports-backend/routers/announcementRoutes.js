@@ -18,5 +18,7 @@ router.get('/', announcementController.getAnnouncements);
 // router.get('/:id', announcementController.getAnnouncementById);
 // router.put('/:id', announcementController.updateAnnouncement);
 // router.delete('/:id', announcementController.deleteAnnouncement);
+router.delete('/:id', announcementController.deleteAnnouncement); // YENİ EKLENDİ
+
 
 module.exports = router;

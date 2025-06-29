@@ -56,6 +56,7 @@ const Modals = React.lazy(() => import('./views/notifications/modals/Modals'))
 const Toasts = React.lazy(() => import('./views/notifications/toasts/Toasts'))
 
 const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
+const AttendanceList = React.lazy(() => import('./views/trainingAttendance/AttendanceList'))
 
 const routes = [
   { path: '/inventory', name: 'Envanter', element: InventoryList },
@@ -63,6 +64,7 @@ const routes = [
   { path: '/agenda', name: 'Ajanda', element: CalendarPage },
   { path: '/match-summary', name: 'Maç Özeti', element: MatchSummaryPage },
   { path: '/my-profile', name: 'Profilim', element: MyProfile },
+  { path: '/training-attendance', name: 'İdman Yoklamaları', element: AttendanceList },
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
   { path: '/theme', name: 'Theme', element: Colors, exact: true },

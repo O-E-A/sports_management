@@ -53,6 +53,7 @@ import {
   cilUserFemale,
   cilPlus,
   cilBullhorn,
+  cilTrash, // YENİ EKLENDİ: Sil butonu için ikon
 } from '@coreui/icons'
 
 import avatar1 from 'src/assets/images/avatars/1.jpg'
@@ -82,32 +83,35 @@ const Dashboard = () => {
 
   const [currentUser, setCurrentUser] = useState(null)
 
+  // Duyuruları getirme fonksiyonu (hem başlangıçta hem de silme/ekleme sonrası kullanılabilir)
+  const fetchAnnouncements = async () => {
+    setLoadingAnnouncements(true)
+    setErrorAnnouncements(null)
+    try {
+      const response = await axios.get('http://localhost:5000/api/announcements')
+      setAnnouncements(response.data)
+    } catch (err) {
+      console.error('Duyurular alınamadı:', err)
+      setErrorAnnouncements(err.response?.data?.message || 'Duyurular yüklenirken bir hata oluştu.')
+    } finally {
+      setLoadingAnnouncements(false)
+    }
+  }
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'))
     if (user) {
       setCurrentUser(user)
     }
 
-    const fetchAnnouncements = async () => {
-      setLoadingAnnouncements(true)
-      setErrorAnnouncements(null)
-      try {
-        const response = await axios.get('http://localhost:5000/api/announcements')
-        setAnnouncements(response.data)
-      } catch (err) {
-        console.error('Duyurular alınamadı:', err)
-        setErrorAnnouncements(
-          err.response?.data?.message || 'Duyurular yüklenirken bir hata oluştu.',
-        )
-      } finally {
-        setLoadingAnnouncements(false)
-      }
-    }
-
-    fetchAnnouncements()
+    fetchAnnouncements() // Sayfa yüklendiğinde duyuruları çek
   }, [])
 
   const canAddAnnouncement =
+    currentUser && (currentUser.role === 'admin' || currentUser.role === 'coach')
+
+  // YENİ EKLENDİ: Duyuru silme yetkisi
+  const canDeleteAnnouncement =
     currentUser && (currentUser.role === 'admin' || currentUser.role === 'coach')
 
   const handleAnnouncementInputChange = (e) => {
@@ -148,6 +152,7 @@ const Dashboard = () => {
         setNewAnnouncementTitle('')
         setNewAnnouncementContent('')
         setAddAnnouncementModalVisible(false)
+        // Yeni duyuruyu listenin başına ekle (veya fetchAnnouncements çağırarak tüm listeyi yeniden çekebilirsiniz)
         setAnnouncements((prevAnnouncements) => [response.data.announcement, ...prevAnnouncements])
       }
     } catch (err) {
@@ -155,6 +160,26 @@ const Dashboard = () => {
       console.error('Duyuru ekleme hatası:', err.response?.data || err)
     } finally {
       setAddingAnnouncement(false)
+    }
+  }
+
+  // YENİ EKLENDİ: Duyuru silme fonksiyonu
+  const handleDeleteAnnouncement = async (announcementId) => {
+    const confirmDelete = window.confirm(
+      'Bu duyuruyu kalıcı olarak silmek istediğinize emin misiniz?',
+    )
+
+    if (confirmDelete) {
+      try {
+        await axios.delete(`http://localhost:5000/api/announcements/${announcementId}`)
+        setAnnouncements((prevAnnouncements) =>
+          prevAnnouncements.filter((announcement) => announcement._id !== announcementId),
+        )
+        alert('Duyuru başarıyla silindi.')
+      } catch (error) {
+        console.error('Duyuru silinirken hata oluştu:', error)
+        alert(error.response?.data?.message || 'Duyuru silinirken bir sorun oluştu.')
+      }
     }
   }
 
@@ -281,8 +306,6 @@ const Dashboard = () => {
 
   return (
     <>
-      <WidgetsDropdown className="mb-4" />
-
       {/* Duyurular Kartı */}
       <CCard className="mb-4">
         <CCardHeader className="d-flex justify-content-between align-items-center">
@@ -315,6 +338,8 @@ const Dashboard = () => {
                   <CTableHeaderCell>İçerik</CTableHeaderCell>
                   <CTableHeaderCell>Yayınlayan</CTableHeaderCell>
                   <CTableHeaderCell>Tarih</CTableHeaderCell>
+                  {/* YENİ EKLENDİ: İşlemler sütunu sadece yetkili kullanıcılar için */}
+                  {canDeleteAnnouncement && <CTableHeaderCell>İşlemler</CTableHeaderCell>}
                 </CTableRow>
               </CTableHead>
               <CTableBody>
@@ -332,6 +357,18 @@ const Dashboard = () => {
                     <CTableDataCell>
                       <div>{moment(item.createdAt).format('DD.MM.YYYY HH:mm')}</div>
                     </CTableDataCell>
+                    {/* YENİ EKLENDİ: Sil butonu sadece yetkili kullanıcılar için */}
+                    {canDeleteAnnouncement && (
+                      <CTableDataCell>
+                        <CButton
+                          color="danger"
+                          size="sm"
+                          onClick={() => handleDeleteAnnouncement(item._id)}
+                        >
+                          <CIcon icon={cilTrash} className="me-1" /> Sil
+                        </CButton>
+                      </CTableDataCell>
+                    )}
                   </CTableRow>
                 ))}
               </CTableBody>
@@ -384,6 +421,7 @@ const Dashboard = () => {
           </CModalFooter>
         </CForm>
       </CModal>
+      <WidgetsDropdown className="mb-4" />
 
       {/* Dashboard'daki diğer kartlar ve içerikler buraya devam ediyor */}
       <CCard className="mb-4">
@@ -554,7 +592,6 @@ const Dashboard = () => {
                         <CAvatar size="md" src={item.avatar.src} status={item.avatar.status} />
                       </CTableDataCell>
                       <CTableDataCell>
-                        {/* Kapanış etiketi eksik olan kısım burasıydı */}
                         <div>
                           {item.user.name}
                           {item.user.new && <span className="badge bg-success ms-2">New</span>}

@@ -26,12 +26,9 @@ const PlayerList = () => {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
-  // Modal'ın görünürlüğü için state
   const [modalVisible, setModalVisible] = useState(false)
-  // Yeni oyuncu formu verileri için state
+
   const [newPlayer, setNewPlayer] = useState({
-    // User ve Profile modellerindeki tüm alanları buraya ekliyoruz
     username: '',
     password: '',
     email: '',
@@ -45,18 +42,16 @@ const PlayerList = () => {
     role: 'player',
   })
 
-  // Kullanıcı rolünü localStorage'dan alarak butonu kontrol et
   const user = JSON.parse(localStorage.getItem('user'))
-  const canAddPlayer = user && (user.role === 'admin' || user.role === 'coach')
+  const canManagePlayers = user && (user.role === 'admin' || user.role === 'coach')
 
-  // Oyuncuları getiren fonksiyon
   const fetchPlayers = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/profiles')
       setPlayers(response.data)
     } catch (error) {
       console.error('Oyuncular çekilemedi:', error)
-      setError('Oyuncular listesi alınamadı. Lütfen backend sunucunuzun çalıştığından emin olun.')
+      setError('Oyuncular listesi alınamadı.')
     } finally {
       setLoading(false)
     }
@@ -66,22 +61,16 @@ const PlayerList = () => {
     fetchPlayers()
   }, [])
 
-  // Formdaki input değişikliklerini handle eden fonksiyon
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setNewPlayer({ ...newPlayer, [name]: value })
+    setNewPlayer((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Formu submit eden ve yeni oyuncu ekleyen fonksiyon
   const handleAddPlayer = async (e) => {
     e.preventDefault()
     try {
-      // Backend'e yeni oyuncu verilerini gönderiyoruz
       await axios.post('http://localhost:5000/api/profiles', newPlayer)
-
-      // İşlem başarılı olunca modal'ı kapat
       setModalVisible(false)
-      // Formu temizle
       setNewPlayer({
         username: '',
         password: '',
@@ -95,15 +84,23 @@ const PlayerList = () => {
         position: '',
         role: 'player',
       })
-      // Oyuncu listesini en güncel haliyle yeniden çek
       fetchPlayers()
     } catch (error) {
-      console.error(
-        'Oyuncu eklenirken hata oluştu:',
-        error.response?.data?.message || error.message,
-      )
-      // Kullanıcıya hata mesajı gösterebilirsiniz. Örneğin:
+      console.error('Oyuncu eklenirken hata:', error)
       alert(`Hata: ${error.response?.data?.message || 'Bir sorun oluştu.'}`)
+    }
+  }
+
+  const handleDeletePlayer = async (profileId) => {
+    const confirmDelete = window.confirm('Bu kullanıcıyı kalıcı olarak silmek istiyor musunuz?')
+    if (confirmDelete) {
+      try {
+        await axios.delete(`http://localhost:5000/api/profiles/${profileId}`)
+        setPlayers((prev) => prev.filter((p) => p._id !== profileId))
+      } catch (error) {
+        console.error('Kullanıcı silinirken hata:', error)
+        alert('Kullanıcı silinirken bir hata oluştu.')
+      }
     }
   }
 
@@ -114,8 +111,7 @@ const PlayerList = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>Oyuncular Listesi</h2>
-        {/* Butonu sadece rolü admin veya coach olanlar görebilir */}
-        {canAddPlayer && (
+        {canManagePlayers && (
           <CButton color="primary" onClick={() => setModalVisible(true)}>
             Yeni Oyuncu Ekle
           </CButton>
@@ -134,6 +130,7 @@ const PlayerList = () => {
               <CTableHeaderCell>Boy (cm)</CTableHeaderCell>
               <CTableHeaderCell>Kilo (kg)</CTableHeaderCell>
               <CTableHeaderCell>Mevki</CTableHeaderCell>
+              {canManagePlayers && <CTableHeaderCell>İşlemler</CTableHeaderCell>}
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -145,26 +142,36 @@ const PlayerList = () => {
                 <CTableDataCell>{player.height}</CTableDataCell>
                 <CTableDataCell>{player.weight}</CTableDataCell>
                 <CTableDataCell>{player.position}</CTableDataCell>
+                {canManagePlayers && (
+                  <CTableDataCell>
+                    <CButton
+                      color="danger"
+                      size="sm"
+                      onClick={() => handleDeletePlayer(player._id)}
+                    >
+                      Sil
+                    </CButton>
+                  </CTableDataCell>
+                )}
               </CTableRow>
             ))}
           </CTableBody>
         </CTable>
       )}
 
-      {/* Yeni Oyuncu Ekleme Modalı */}
+      {/* Oyuncu Ekleme Modalı */}
       <CModal size="lg" visible={modalVisible} onClose={() => setModalVisible(false)}>
         <CModalHeader>
           <CModalTitle>Yeni Oyuncu Ekle</CModalTitle>
         </CModalHeader>
         <CForm onSubmit={handleAddPlayer}>
           <CModalBody>
-            <h5>Kullanıcı Bilgileri (Giriş için)</h5>
+            <h5>Kullanıcı Bilgileri</h5>
             <hr />
             <CRow className="mb-3">
               <CCol md={6}>
-                <CFormLabel htmlFor="username">Kullanıcı Adı</CFormLabel>
+                <CFormLabel>Kullanıcı Adı</CFormLabel>
                 <CFormInput
-                  id="username"
                   name="username"
                   value={newPlayer.username}
                   onChange={handleInputChange}
@@ -172,10 +179,9 @@ const PlayerList = () => {
                 />
               </CCol>
               <CCol md={6}>
-                <CFormLabel htmlFor="password">Şifre</CFormLabel>
+                <CFormLabel>Şifre</CFormLabel>
                 <CFormInput
                   type="password"
-                  id="password"
                   name="password"
                   value={newPlayer.password}
                   onChange={handleInputChange}
@@ -185,9 +191,8 @@ const PlayerList = () => {
             </CRow>
             <CRow className="mb-3">
               <CCol md={6}>
-                <CFormLabel htmlFor="role">Kullanıcı Rolü</CFormLabel>
+                <CFormLabel>Kullanıcı Rolü</CFormLabel>
                 <CFormSelect
-                  id="role"
                   name="role"
                   value={newPlayer.role}
                   onChange={handleInputChange}
@@ -198,33 +203,26 @@ const PlayerList = () => {
                 />
               </CCol>
               <CCol md={6}>
-                <CFormLabel htmlFor="email">E-posta</CFormLabel>
+                <CFormLabel>E-posta</CFormLabel>
                 <CFormInput
                   type="email"
-                  id="email"
                   name="email"
                   value={newPlayer.email}
                   onChange={handleInputChange}
                 />
               </CCol>
               <CCol md={6}>
-                <CFormLabel htmlFor="phone">Telefon</CFormLabel>
-                <CFormInput
-                  id="phone"
-                  name="phone"
-                  value={newPlayer.phone}
-                  onChange={handleInputChange}
-                />
+                <CFormLabel>Telefon</CFormLabel>
+                <CFormInput name="phone" value={newPlayer.phone} onChange={handleInputChange} />
               </CCol>
             </CRow>
 
-            <h5 className="mt-4">Profil Bilgileri</h5>
+            <h5>Profil Bilgileri</h5>
             <hr />
             <CRow className="mb-3">
               <CCol md={6}>
-                <CFormLabel htmlFor="firstName">Ad</CFormLabel>
+                <CFormLabel>Ad</CFormLabel>
                 <CFormInput
-                  id="firstName"
                   name="firstName"
                   value={newPlayer.firstName}
                   onChange={handleInputChange}
@@ -232,9 +230,8 @@ const PlayerList = () => {
                 />
               </CCol>
               <CCol md={6}>
-                <CFormLabel htmlFor="lastName">Soyad</CFormLabel>
+                <CFormLabel>Soyad</CFormLabel>
                 <CFormInput
-                  id="lastName"
                   name="lastName"
                   value={newPlayer.lastName}
                   onChange={handleInputChange}
@@ -244,30 +241,27 @@ const PlayerList = () => {
             </CRow>
             <CRow className="mb-3">
               <CCol md={4}>
-                <CFormLabel htmlFor="age">Yaş</CFormLabel>
+                <CFormLabel>Yaş</CFormLabel>
                 <CFormInput
                   type="number"
-                  id="age"
                   name="age"
                   value={newPlayer.age}
                   onChange={handleInputChange}
                 />
               </CCol>
               <CCol md={4}>
-                <CFormLabel htmlFor="height">Boy (cm)</CFormLabel>
+                <CFormLabel>Boy (cm)</CFormLabel>
                 <CFormInput
                   type="number"
-                  id="height"
                   name="height"
                   value={newPlayer.height}
                   onChange={handleInputChange}
                 />
               </CCol>
               <CCol md={4}>
-                <CFormLabel htmlFor="weight">Kilo (kg)</CFormLabel>
+                <CFormLabel>Kilo (kg)</CFormLabel>
                 <CFormInput
                   type="number"
-                  id="weight"
                   name="weight"
                   value={newPlayer.weight}
                   onChange={handleInputChange}
@@ -275,13 +269,8 @@ const PlayerList = () => {
               </CCol>
             </CRow>
             <div className="mb-3">
-              <CFormLabel htmlFor="position">Mevki</CFormLabel>
-              <CFormInput
-                id="position"
-                name="position"
-                value={newPlayer.position}
-                onChange={handleInputChange}
-              />
+              <CFormLabel>Mevki</CFormLabel>
+              <CFormInput name="position" value={newPlayer.position} onChange={handleInputChange} />
             </div>
           </CModalBody>
           <CModalFooter>

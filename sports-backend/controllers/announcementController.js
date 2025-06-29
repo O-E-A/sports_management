@@ -86,7 +86,20 @@ exports.getAnnouncements = async (req, res) => {
   }
 };
 
-// Diğer CRUD işlemleri (isteğe bağlı, şimdilik sadece oluşturma ve getirme odaklıyız)
-// exports.getAnnouncementById = async (req, res) => { ... }
-// exports.updateAnnouncement = async (req, res) => { ... }
-// exports.deleteAnnouncement = async (req, res) => { ... }
+exports.deleteAnnouncement = async (req, res) => {
+  try {
+      const { id } = req.params; // Silinecek duyurunun ID'si
+
+      // Duyuruyu veritabanından bulun ve silin
+      const deletedAnnouncement = await Announcement.findByIdAndDelete(id);
+
+      if (!deletedAnnouncement) {
+          return res.status(404).json({ message: 'Silinecek duyuru bulunamadı.' });
+      }
+
+      res.status(200).json({ message: 'Duyuru başarıyla silindi.', announcementId: id });
+  } catch (error) {
+      console.error('Duyuru silme hatası:', error);
+      res.status(500).json({ message: 'Duyuru silinirken bir hata oluştu.' });
+  }
+};

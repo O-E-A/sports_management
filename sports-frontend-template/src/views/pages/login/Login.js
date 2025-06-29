@@ -18,6 +18,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import axios from 'axios'
+import myLogo from 'src/assets/images/logo3.jpg'
 
 const Login = () => {
   const [username, setUsername] = useState('')
@@ -130,14 +131,8 @@ const Login = () => {
               </CCard>
 
               <CCard className="text-white bg-primary py-5" style={{ width: '44%' }}>
-                <CCardBody className="text-center">
-                  <div>
-                    <h2>Kayıt Ol</h2>
-                    <p>Yeni kullanıcı oluşturmak için tıklayın.</p>
-                    <CButton color="light" className="mt-3" href="/register">
-                      Kayıt Ol
-                    </CButton>
-                  </div>
+                <CCardBody className="text-center d-flex align-items-center justify-content-center">
+                  <img src={myLogo} alt="Full Logo" style={{ maxWidth: '100%', height: 'auto' }} />
                 </CCardBody>
               </CCard>
             </CCardGroup>

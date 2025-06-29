@@ -22,7 +22,9 @@ const trainingPlanRoutes = require('./routers/trainingPlanRoutes')
 
 const inventoryRoutes = require('./routers/inventoryRoutes')
 const announcementRoutes = require('./routers/announcementRoutes')
+const trainingAttendanceRoutes = require('./routers/trainingAttendanceRoutes')
 
+app.use('/api/training-attendance', trainingAttendanceRoutes)
 app.use('/api/inventory', inventoryRoutes)
 app.use('/api/announcements', announcementRoutes)
 

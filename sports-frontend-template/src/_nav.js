@@ -15,6 +15,7 @@ import {
   cilStar,
   cilPeople,
   cilCalendar,
+  cilTask,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
@@ -52,6 +53,12 @@ const _nav = [
     name: 'Maç Özeti',
     to: '/match-summary',
     icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'İdman Yoklamaları',
+    to: '/training-attendance',
+    icon: <CIcon icon={cilTask} customClassName="nav-icon" />,
   },
   {
     component: CNavTitle,

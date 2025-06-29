@@ -113,4 +113,51 @@ router.get('/', async (req, res) => {
   }
 });
 
+// =================================================================
+// YENİ EKLENEN ROTA: Bir profili ve ona bağlı kullanıcıyı sil
+// DELETE /api/profiles/:id
+// =================================================================
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params; // Bu ID, silinecek olan profilin _id'sidir.
+
+  // Transaction için bir session başlatıyoruz
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // 1. Silinecek profili bul. Bu bize ilişkili kullanıcının ID'sini (userId) verecek.
+    const profileToDelete = await Profile.findById(id).session(session);
+
+    if (!profileToDelete) {
+      // Eğer profil bulunamazsa, işlemi iptal et ve hata döndür.
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Silinecek profil bulunamadı.' });
+    }
+
+    const userIdToDelete = profileToDelete.userId;
+
+    // 2. İlişkili kullanıcıyı 'users' koleksiyonundan sil.
+    if (userIdToDelete) {
+      await User.findByIdAndDelete(userIdToDelete).session(session);
+    }
+    
+    // 3. Profilin kendisini 'profiles' koleksiyonundan sil.
+    await Profile.findByIdAndDelete(id).session(session);
+
+    // 4. Tüm işlemler başarılı olduysa, transaction'ı onayla.
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({ message: 'Kullanıcı ve profili başarıyla silindi.' });
+
+  } catch (error) {
+    // Herhangi bir adımda hata olursa, tüm işlemleri geri al.
+    await session.abortTransaction();
+    session.endSession();
+    console.error('Kullanıcı silme işlemi sırasında sunucu hatası:', error);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+});
+
 module.exports = router;
