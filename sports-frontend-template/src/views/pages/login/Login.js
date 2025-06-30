@@ -119,12 +119,6 @@ const Login = () => {
                           Giriş Yap
                         </CButton>
                       </CCol>
-                      {/* Şifremi unuttum veya kayıt ol linklerini buraya ekleyebilirsiniz */}
-                      {/* <CCol xs={6} className="text-right">
-                        <CButton color="link" className="px-0">
-                          Şifremi unuttum?
-                        </CButton>
-                      </CCol> */}
                     </CRow>
                   </CForm>
                 </CCardBody>
